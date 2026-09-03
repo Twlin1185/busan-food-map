@@ -314,7 +314,12 @@ body{
   white-space:nowrap;
 }
 .lnk.go{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
-.lnk:hover{color:var(--accent);border-color:var(--accent)}
+/* 손가락 화면에서는 hover를 아예 적용하지 않는다.
+   터치로 링크를 누르면 hover가 눌러붙어, 지도 앱에서 돌아와도 풀리지 않는다. */
+@media (hover:hover) and (pointer:fine){
+  .lnk:hover{color:var(--accent);border-color:var(--accent)}
+  .lnk.go:hover{color:var(--accent-ink);background:var(--accent);border-color:var(--accent)}
+}
 
 .empty{
   text-align:center;padding:48px 16px;color:var(--muted);
