@@ -158,11 +158,9 @@ body{
 .tile.all{grid-column:1/-1;min-height:62px;flex-direction:row;align-items:center}
 .tile[aria-current="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
 .tile[aria-current="true"] .c{color:var(--accent-ink);opacity:.75}
-.tile:disabled{cursor:default;background:var(--surface-sunk);border-style:dashed;color:var(--faint)}
-.tile:disabled .c{color:var(--faint)}
 .tile:focus-visible,.x:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 @media (hover:hover) and (pointer:fine){
-  .tile:not(:disabled):not([aria-current="true"]):hover{border-color:var(--accent);color:var(--accent)}
+  .tile:not([aria-current="true"]):hover{border-color:var(--accent);color:var(--accent)}
 }
 /* 휴대폰에서는 화면 전체를 덮는다 */
 @media (max-width:520px){
@@ -496,7 +494,8 @@ const countBy = (list, f) => {
   return [...m.entries()].sort((a, b) => b[1] - a[1]);
 };
 const REGIONS = countBy(PLACES, p => p.region);
-/* 고르기 창에 늘어놓는 순서. 가게가 없는 곳은 '준비 중'으로 흐리게 */
+/* 고르기 창에 늘어놓는 순서. 가게가 한 곳도 없는 시·도는 창에 안 나오고,
+   PLACES에 그 지역 가게(region)를 넣으면 이 순서대로 저절로 나타난다 */
 const SIDO = ['서울','부산','대구','인천','광주','대전','울산','세종','경기','강원','충북','충남','전북','전남','경북','경남','제주'];
 /* 지금 고른 시·도의 가게들. 전국이면 전부 */
 const scope = () => state.region ? PLACES.filter(p => p.region === state.region) : PLACES;
@@ -567,12 +566,11 @@ function openPicker() {
   const grid = $('#regionGrid');
   grid.textContent = '';
   const counts = new Map(REGIONS);
-  [['', '전국', PLACES.length], ...SIDO.map(r => [r, r, counts.get(r) || 0])].forEach(([v, label, n]) => {
+  [['', '전국', PLACES.length], ...[...SIDO.filter(r => counts.has(r)), ...[...counts.keys()].filter(r => !SIDO.includes(r))].map(r => [r, r, counts.get(r)])].forEach(([v, label, n]) => {
     const b = document.createElement('button');
     b.type = 'button';
     b.className = 'tile' + (v === '' ? ' all' : '');
-    b.innerHTML = '<span class="t">' + label + '</span><span class="c">' + (n ? n + '곳' : '준비 중') + '</span>';
-    b.disabled = !n;
+    b.innerHTML = '<span class="t">' + label + '</span><span class="c">' + n + '곳</span>';
     b.setAttribute('aria-current', String(v === state.region));
     b.addEventListener('click', () => {
       setRegion(v);
