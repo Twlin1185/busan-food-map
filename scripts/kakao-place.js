@@ -62,7 +62,7 @@ if (!key) {
     console.log('   ' + JSON.stringify({
       region,
       gu, dong: rest[0] || '',
-      address: d.road_address_name.replace(/^S+/, region),
+      address: d.road_address_name.replace(/^\S+/, region),
       category: d.category_name,
       kakao: 'https://place.map.kakao.com/' + d.id,
       x: d.x, y: d.y,
