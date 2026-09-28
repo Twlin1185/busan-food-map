@@ -107,6 +107,68 @@ body{
   text-wrap:balance;
 }
 .masthead h1 .n{color:var(--accent)}
+/* 제목 전체가 시·도 고르기 버튼 */
+.pick{
+  font:inherit;color:inherit;letter-spacing:inherit;text-align:left;
+  background:none;border:0;padding:0;margin:0;cursor:pointer;
+}
+.pick .rg{
+  display:inline-flex;align-items:center;gap:.12em;
+  border-bottom:3px solid var(--accent);
+}
+.pick .caret{width:.5em;height:.5em;color:var(--accent);flex:none}
+.pick:focus-visible{outline:2px solid var(--accent);outline-offset:4px;border-radius:4px}
+@media (hover:hover) and (pointer:fine){
+  .pick:hover .rg{color:var(--accent)}
+}
+
+/* ── 시·도 고르기 창 ───────────────────── */
+.sheet{
+  border:none;padding:0;
+  width:min(560px,calc(100% - 32px));max-height:calc(100% - 48px);
+  background:var(--paper);color:var(--ink);
+  border-radius:14px;box-shadow:var(--shadow);
+}
+.sheet::backdrop{background:rgba(6,16,18,.55)}
+.sheet-in{padding:20px 16px calc(20px + env(safe-area-inset-bottom))}
+.sheet-head{display:flex;align-items:flex-start;gap:12px;margin-bottom:16px}
+.sheet-head > div{flex:1;min-width:0}
+.sheet-head h2{
+  font-family:var(--font-display);font-weight:400;
+  font-size:26px;line-height:1.2;margin:0;
+  word-break:keep-all;text-wrap:balance;
+}
+.sheet-head p{margin:6px 0 0;font-size:15px;color:var(--muted)}
+.x{
+  font:inherit;font-size:15px;font-weight:600;flex:none;
+  min-height:42px;padding:0 14px;
+  color:var(--muted);background:var(--surface);
+  border:1px solid var(--line);border-radius:999px;cursor:pointer;
+}
+.regions{display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:8px}
+.tile{
+  font:inherit;text-align:left;cursor:pointer;
+  display:flex;flex-direction:column;justify-content:space-between;gap:4px;
+  min-height:74px;padding:11px 13px;
+  color:var(--ink);background:var(--surface);
+  border:1px solid var(--line);border-radius:var(--radius);
+}
+.tile .t{font-family:var(--font-display);font-size:22px;line-height:1.1}
+.tile .c{font-family:var(--font-mono);font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
+.tile.all{grid-column:1/-1;min-height:62px;flex-direction:row;align-items:center}
+.tile[aria-current="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.tile[aria-current="true"] .c{color:var(--accent-ink);opacity:.75}
+.tile:disabled{cursor:default;background:var(--surface-sunk);border-style:dashed;color:var(--faint)}
+.tile:disabled .c{color:var(--faint)}
+.tile:focus-visible,.x:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+@media (hover:hover) and (pointer:fine){
+  .tile:not(:disabled):not([aria-current="true"]):hover{border-color:var(--accent);color:var(--accent)}
+}
+/* 휴대폰에서는 화면 전체를 덮는다 */
+@media (max-width:520px){
+  .sheet{width:100%;max-width:none;height:100%;max-height:none;margin:0;border-radius:0}
+  .sheet-in{padding-top:calc(20px + env(safe-area-inset-top))}
+}
 .masthead .sub{
   margin:8px 0 0;
   color:var(--muted);
@@ -358,8 +420,8 @@ footer b{color:var(--muted);font-weight:600}
 <div class="wrap">
 
   <header class="masthead">
-    <h1><span id="regionName">전국</span> 맛집 <span class="n">지도첩</span></h1>
-    <p class="sub">버튼을 누르면 지도 앱이 열립니다.</p>
+    <h1><button id="pick" class="pick" type="button" aria-haspopup="dialog"><span class="rg"><span id="regionName">전국</span><svg class="caret" viewBox="0 0 10 10" aria-hidden="true"><path d="M1.5 3.2 5 6.8l3.5-3.6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span> 맛집 <span class="n">지도첩</span></button></h1>
+    <p class="sub">제목을 누르면 다른 지역을 고를 수 있습니다.</p>
   </header>
 
   <div class="toolbar">
@@ -367,7 +429,6 @@ footer b{color:var(--muted);font-weight:600}
       <input id="q" class="search" type="search" placeholder="가게 이름, 동네, 음식으로 검색" autocomplete="off">
       <button id="near" class="btn" aria-pressed="false">내 위치</button>
     </div>
-    <div class="rail" id="railRegion" role="group" aria-label="시·도 선택"></div>
     <div class="rail" id="railGu" role="group" aria-label="구·군 필터"></div>
     <div class="rail" id="railCat" role="group" aria-label="종류 필터"></div>
   </div>
@@ -383,12 +444,25 @@ footer b{color:var(--muted);font-weight:600}
   <main id="out"></main>
 
   <footer>
-    <p><b>시·도</b>를 고르면 그 지역 맛집만 보이고, 구·군 칩이 그 지역 것으로 바뀝니다. <b>랜드마크</b> — 웨이팅이 매우 긴 그 지역 대표 맛집. <b>밀집 지역</b> — 개별 상호가 아니라 가게가 모여 있는 거리. <b>지도 미등록</b> — 간판이 없거나 카카오맵에 상호가 없어 검색 링크로 연결됩니다.</p>
+    <p>맨 위 <b>제목</b>을 누르면 전국 또는 시·도를 고를 수 있고, 구·군 칩은 고른 지역 것으로 바뀝니다. <b>랜드마크</b> — 웨이팅이 매우 긴 그 지역 대표 맛집. <b>밀집 지역</b> — 개별 상호가 아니라 가게가 모여 있는 거리. <b>지도 미등록</b> — 간판이 없거나 카카오맵에 상호가 없어 검색 링크로 연결됩니다.</p>
     <p><b>길찾기</b>를 누르면 카카오맵이 지금 있는 곳에서 그 가게까지 가는 길을 안내합니다. 카카오맵 앱이 깔려 있으면 앱으로 열립니다.</p>
     <p><b>내 위치</b>를 누르면 브라우저가 위치를 물어보고, 허용하면 가까운 순으로 다시 정렬합니다. 위치는 이 페이지 안에서만 쓰이고 어디에도 전송되지 않습니다.</p>
   </footer>
 
   <button id="top" class="totop" hidden>↑ 맨 위로</button>
+
+  <dialog id="regionDlg" class="sheet" aria-labelledby="dlgTitle">
+    <div class="sheet-in">
+      <div class="sheet-head">
+        <div>
+          <h2 id="dlgTitle">어느 지역 맛집을 볼까요?</h2>
+          <p>고른 지역은 다음에 열 때도 그대로입니다.</p>
+        </div>
+        <button class="x" type="button" id="dlgClose">닫기</button>
+      </div>
+      <div class="regions" id="regionGrid"></div>
+    </div>
+  </dialog>
 
 </div>
 
@@ -422,6 +496,8 @@ const countBy = (list, f) => {
   return [...m.entries()].sort((a, b) => b[1] - a[1]);
 };
 const REGIONS = countBy(PLACES, p => p.region);
+/* 고르기 창에 늘어놓는 순서. 가게가 없는 곳은 '준비 중'으로 흐리게 */
+const SIDO = ['서울','부산','대구','인천','광주','대전','울산','세종','경기','강원','충북','충남','전북','전남','경북','경남','제주'];
 /* 지금 고른 시·도의 가게들. 전국이면 전부 */
 const scope = () => state.region ? PLACES.filter(p => p.region === state.region) : PLACES;
 
@@ -449,21 +525,6 @@ function chip(rail, label, value, key, count) {
   rail.appendChild(b);
 }
 
-/* 시·도는 늘 하나만 고른다. 바꾸면 구·군과 종류 칩을 그 지역 것으로 다시 만든다 */
-function buildRegionRail() {
-  const rr = $('#railRegion');
-  rr.innerHTML = '<span class="rail-label">시·도</span>';
-  [['', '전국', PLACES.length], ...REGIONS.map(([r, n]) => [r, r, n])].forEach(([v, label, n]) => {
-    const b = document.createElement('button');
-    b.className = 'chip';
-    b.type = 'button';
-    b.innerHTML = label + ' <span class="c">' + n + '</span>';
-    b.dataset.v = v;
-    b.addEventListener('click', () => { setRegion(v); toTop(); });
-    rr.appendChild(b);
-  });
-}
-
 function buildRails() {
   const list = scope();
   const rg = $('#railGu'), rc = $('#railCat');
@@ -489,17 +550,43 @@ function setRegion(r) {
   // 종류는 새 지역에도 있는 것만 남긴다
   const majors = new Set(scope().map(p => p.major));
   [...state.cat].forEach(m => { if (!majors.has(m)) state.cat.delete(m); });
-  $('#railRegion').querySelectorAll('.chip').forEach(c =>
-    c.setAttribute('aria-pressed', String(c.dataset.v === r)));
   const name = r || '전국';
   $('#regionName').textContent = name;
   document.title = name + ' 맛집 지도첩';
   // 주소창에 #광주 처럼 남겨서 그 지역 링크를 그대로 공유할 수 있게
   const hash = r ? '#' + encodeURIComponent(r) : '';
   if (location.hash !== hash) history.replaceState(null, '', location.pathname + location.search + hash);
+  try { localStorage.setItem('region', r); } catch (_) {}
   buildRails();
   render();
 }
+
+/* 시·도 고르기 창: 제목을 누르면 열리고, 처음 온 사람에게는 먼저 뜬다 */
+const dlg = $('#regionDlg');
+function openPicker() {
+  const grid = $('#regionGrid');
+  grid.textContent = '';
+  const counts = new Map(REGIONS);
+  [['', '전국', PLACES.length], ...SIDO.map(r => [r, r, counts.get(r) || 0])].forEach(([v, label, n]) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'tile' + (v === '' ? ' all' : '');
+    b.innerHTML = '<span class="t">' + label + '</span><span class="c">' + (n ? n + '곳' : '준비 중') + '</span>';
+    b.disabled = !n;
+    b.setAttribute('aria-current', String(v === state.region));
+    b.addEventListener('click', () => {
+      setRegion(v);
+      dlg.close();
+      scrollTo({ top: 0 });
+    });
+    grid.appendChild(b);
+  });
+  dlg.showModal();
+  (grid.querySelector('[aria-current="true"]') || grid.firstChild).focus();
+}
+$('#pick').addEventListener('click', openPicker);
+$('#dlgClose').addEventListener('click', () => dlg.close());
+dlg.addEventListener('click', e => { if (e.target === dlg) dlg.close(); });   // 바깥 어두운 곳을 누르면 닫힘
 
 function dist(a, b, x, y) {
   const R = 6371, r = Math.PI / 180;
@@ -694,9 +781,13 @@ nearBtn.addEventListener('click', () => {
   );
 });
 
-buildRegionRail();
 const regionFromHash = () => { try { return decodeURIComponent(location.hash.slice(1)); } catch (_) { return ''; } };
-setRegion(regionFromHash());
+/* 주소의 #광주 > 지난번에 고른 지역 > 처음이면 고르기 창 */
+let saved = null;
+try { saved = localStorage.getItem('region'); } catch (_) {}
+const first = !location.hash && saved === null;
+setRegion(location.hash ? regionFromHash() : (saved || ''));
+if (first) openPicker();
 addEventListener('hashchange', () => setRegion(regionFromHash()));
 
 /* 맨 위로 버튼 */
